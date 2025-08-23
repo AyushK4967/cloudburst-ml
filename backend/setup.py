@@ -1,0 +1,33 @@
+from setuptools import setup, find_packages
+
+setup(
+    name="ml-platform-backend",
+    version="1.0.0",
+    description="ML Cloud Platform Backend API",
+    packages=find_packages(),
+    install_requires=[
+        "fastapi==0.104.1",
+        "uvicorn==0.24.0",
+        "sqlalchemy==2.0.23",
+        "alembic==1.12.1",
+        "psycopg2-binary==2.9.9",
+        "redis==5.0.1",
+        "celery==5.3.4",
+        "pydantic==2.5.0",
+        "python-multipart==0.0.6",
+        "passlib==1.7.4",
+        "python-jose==3.3.0",
+        "bcrypt==4.1.2",
+        "stripe==7.8.0",
+        "boto3==1.34.0",
+        "docker==6.1.3",
+        "kubernetes==28.1.0",
+        "mlflow==2.8.1",
+        "jupyterhub==4.0.2",
+        "notebook==7.0.6",
+        "pytest==7.4.3",
+        "pytest-asyncio==0.21.1",
+        "python-dotenv==1.0.0"
+    ],
+    python_requires=">=3.10",
+)
