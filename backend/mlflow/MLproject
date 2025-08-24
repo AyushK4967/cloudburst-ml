@@ -1,0 +1,17 @@
+name: ML Platform MLflow Integration
+
+conda_env: conda.yaml
+
+entry_points:
+  main:
+    parameters:
+      model_name: {type: str, default: "model"}
+      model_version: {type: str, default: "1"}
+    command: "python train.py --model-name {model_name} --model-version {model_version}"
+  
+  serve:
+    parameters:
+      model_name: {type: str}
+      model_version: {type: str, default: "latest"}
+      port: {type: int, default: 5001}
+    command: "mlflow models serve -m models:/{model_name}/{model_version} -p {port} --host 0.0.0.0"

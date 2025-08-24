@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gpu-notebook-template
+  namespace: ml-platform
+spec:
+  replicas: 0  # Template only, scaled by JupyterHub
+  selector:
+    matchLabels:
+      app: gpu-notebook
+  template:
+    metadata:
+      labels:
+        app: gpu-notebook
+    spec:
+      nodeSelector:
+        accelerator: nvidia-tesla-k80  # Adjust based on your GPU nodes
+      containers:
+      - name: notebook
+        image: tensorflow/tensorflow:latest-gpu-jupyter
+        ports:
+        - containerPort: 8888
+        resources:
+          requests:
+            nvidia.com/gpu: 1
+            memory: "4Gi"
+            cpu: "2"
+          limits:
+            nvidia.com/gpu: 1
+            memory: "8Gi"
+            cpu: "4"
+        env:
+        - name: NVIDIA_VISIBLE_DEVICES
+          value: "all"
+        - name: NVIDIA_DRIVER_CAPABILITIES
+          value: "compute,utility"
+        volumeMounts:
+        - name: workspace
+          mountPath: /tf/notebooks
+      volumes:
+      - name: workspace
+        persistentVolumeClaim:
+          claimName: notebook-workspace-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: notebook-workspace-pvc
+  namespace: ml-platform
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi

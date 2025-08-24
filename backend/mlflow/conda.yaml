@@ -1,0 +1,19 @@
+name: ml-platform-mlflow
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - pip:
+    - mlflow>=2.8.0
+    - scikit-learn
+    - pandas
+    - numpy
+    - tensorflow
+    - torch
+    - transformers
+    - fastapi
+    - uvicorn
+    - boto3
+    - psycopg2-binary
