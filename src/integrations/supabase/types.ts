@@ -14,7 +14,111 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      deployed_models: {
+        Row: {
+          avg_latency: number | null
+          created_at: string | null
+          daily_calls: number | null
+          description: string | null
+          endpoint: string
+          framework: string | null
+          id: string
+          name: string
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          avg_latency?: number | null
+          created_at?: string | null
+          daily_calls?: number | null
+          description?: string | null
+          endpoint: string
+          framework?: string | null
+          id?: string
+          name: string
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          avg_latency?: number | null
+          created_at?: string | null
+          daily_calls?: number | null
+          description?: string | null
+          endpoint?: string
+          framework?: string | null
+          id?: string
+          name?: string
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      notebooks: {
+        Row: {
+          created_at: string | null
+          gpu_type: string | null
+          id: string
+          name: string
+          runtime_minutes: number | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          gpu_type?: string | null
+          id?: string
+          name: string
+          runtime_minutes?: number | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          gpu_type?: string | null
+          id?: string
+          name?: string
+          runtime_minutes?: number | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      usage_logs: {
+        Row: {
+          cost_amount: number | null
+          created_at: string | null
+          id: string
+          resource_id: string | null
+          resource_type: string
+          usage_amount: number | null
+          user_id: string | null
+        }
+        Insert: {
+          cost_amount?: number | null
+          created_at?: string | null
+          id?: string
+          resource_id?: string | null
+          resource_type: string
+          usage_amount?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          cost_amount?: number | null
+          created_at?: string | null
+          id?: string
+          resource_id?: string | null
+          resource_type?: string
+          usage_amount?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
