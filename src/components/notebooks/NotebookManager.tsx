@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { 
   Play, 
-  Square, 
+  Square,
   Trash2,
   ExternalLink,
   Cpu, 
@@ -21,16 +21,9 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/components/auth/AuthProvider';
+import type { Database } from '@/integrations/supabase/types';
 
-interface Notebook {
-  id: string;
-  name: string;
-  status: 'running' | 'stopped' | 'starting' | 'stopping';
-  gpu_type: string;
-  created_at: string;
-  runtime_minutes: number;
-  user_id: string;
-}
+type Notebook = Database['public']['Tables']['notebooks']['Row'];
 
 export const NotebookManager = () => {
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);

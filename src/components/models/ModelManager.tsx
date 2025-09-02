@@ -23,19 +23,9 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/components/auth/AuthProvider';
+import type { Database } from '@/integrations/supabase/types';
 
-interface Model {
-  id: string;
-  name: string;
-  description?: string;
-  endpoint: string;
-  status: 'deployed' | 'deploying' | 'stopped' | 'failed';
-  framework: string;
-  created_at: string;
-  daily_calls: number;
-  avg_latency: number;
-  user_id: string;
-}
+type Model = Database['public']['Tables']['deployed_models']['Row'];
 
 export const ModelManager = () => {
   const [models, setModels] = useState<Model[]>([]);

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,20 +8,45 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { 
   Play, 
-  Square, 
   Cpu, 
   HardDrive, 
   Zap, 
   DollarSign, 
-  FileCode, 
   Rocket,
   Monitor,
-  Clock,
-  BarChart3
+  User,
+  LogOut
 } from "lucide-react";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { NotebookManager } from "@/components/notebooks/NotebookManager";
+import { ModelManager } from "@/components/models/ModelManager";
+import { DashboardStats } from "@/components/dashboard/DashboardStats";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
+  const { user, signOut, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/auth');
+    }
+  }, [user, loading, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Monitor className="h-12 w-12 mx-auto text-primary mb-4 animate-pulse" />
+          <p className="text-lg font-medium">Loading MLCloud...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null; // Will redirect to auth
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -32,16 +58,32 @@ const Index = () => {
             <h1 className="text-2xl font-bold text-foreground">MLCloud</h1>
           </div>
           <div className="flex items-center space-x-4">
-            <Badge variant="secondary" className="text-sm">
-              <Zap className="h-4 w-4 mr-1" />
-              $12.50 credits
-            </Badge>
-            <Button size="sm">Account</Button>
+            {user && (
+              <>
+                <Badge variant="secondary" className="text-sm">
+                  <Zap className="h-4 w-4 mr-1" />
+                  $10.00 free credits
+                </Badge>
+                <span className="text-sm text-muted-foreground">
+                  {user.email}
+                </span>
+                <Button size="sm" variant="outline" onClick={signOut}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sign Out
+                </Button>
+              </>
+            )}
+            {!user && (
+              <Button size="sm" onClick={() => navigate('/auth')}>
+                <User className="h-4 w-4 mr-2" />
+                Sign In
+              </Button>
+            )}
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-6">
+        <div className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-4 mb-6">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
@@ -51,64 +93,20 @@ const Index = () => {
           </TabsList>
 
           <TabsContent value="dashboard">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Active Notebooks</CardTitle>
-                  <FileCode className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">2</div>
-                  <p className="text-xs text-muted-foreground">Running on GPU</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Deployed Models</CardTitle>
-                  <Rocket className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">5</div>
-                  <p className="text-xs text-muted-foreground">Live endpoints</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">GPU Hours</CardTitle>
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">24.5</div>
-                  <p className="text-xs text-muted-foreground">This month</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">API Calls</CardTitle>
-                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">1,240</div>
-                  <p className="text-xs text-muted-foreground">Last 7 days</p>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <DashboardStats />
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
               <Card>
                 <CardHeader>
                   <CardTitle>Quick Start</CardTitle>
                   <CardDescription>Launch a new notebook or deploy a model</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <Button className="w-full justify-start">
+                  <Button className="w-full justify-start" onClick={() => setActiveTab("notebooks")}>
                     <Play className="h-4 w-4 mr-2" />
                     New Notebook
                   </Button>
-                  <Button variant="outline" className="w-full justify-start">
+                  <Button variant="outline" className="w-full justify-start" onClick={() => setActiveTab("models")}>
                     <Rocket className="h-4 w-4 mr-2" />
                     Deploy Model
                   </Button>
@@ -123,17 +121,17 @@ const Index = () => {
                 <CardContent className="space-y-4">
                   <div>
                     <div className="flex justify-between text-sm mb-1">
-                      <span>GPU Usage</span>
-                      <span>2/8 GPUs</span>
+                      <span>Free Credits</span>
+                      <span>$10.00/$10.00</span>
                     </div>
-                    <Progress value={25} className="h-2" />
+                    <Progress value={100} className="h-2" />
                   </div>
                   <div>
                     <div className="flex justify-between text-sm mb-1">
                       <span>Storage</span>
-                      <span>45GB/100GB</span>
+                      <span>2GB/100GB</span>
                     </div>
-                    <Progress value={45} className="h-2" />
+                    <Progress value={2} className="h-2" />
                   </div>
                 </CardContent>
               </Card>
@@ -141,90 +139,11 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="notebooks">
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold">Notebooks</h2>
-                <Button>
-                  <Play className="h-4 w-4 mr-2" />
-                  New Notebook
-                </Button>
-              </div>
-
-              <div className="grid gap-4">
-                {[
-                  { name: "Image Classification", status: "running", gpu: "A100", runtime: "2h 15m" },
-                  { name: "NLP Fine-tuning", status: "stopped", gpu: "V100", runtime: "0h 0m" },
-                  { name: "Data Analysis", status: "running", gpu: "T4", runtime: "45m" }
-                ].map((notebook, i) => (
-                  <Card key={i}>
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                          <div>
-                            <h3 className="font-semibold">{notebook.name}</h3>
-                            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                              <Cpu className="h-4 w-4" />
-                              <span>{notebook.gpu}</span>
-                              <Separator orientation="vertical" className="h-4" />
-                              <Clock className="h-4 w-4" />
-                              <span>{notebook.runtime}</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Badge variant={notebook.status === "running" ? "default" : "secondary"}>
-                            {notebook.status}
-                          </Badge>
-                          <Button size="sm" variant="outline">
-                            {notebook.status === "running" ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
+            <NotebookManager />
           </TabsContent>
 
           <TabsContent value="models">
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold">Deployed Models</h2>
-                <Button>
-                  <Rocket className="h-4 w-4 mr-2" />
-                  Deploy New Model
-                </Button>
-              </div>
-
-              <div className="grid gap-4">
-                {[
-                  { name: "resnet50-classifier", endpoint: "api/v1/classify", calls: 450, latency: "120ms" },
-                  { name: "bert-sentiment", endpoint: "api/v1/sentiment", calls: 230, latency: "85ms" },
-                  { name: "gpt2-generator", endpoint: "api/v1/generate", calls: 120, latency: "340ms" }
-                ].map((model, i) => (
-                  <Card key={i}>
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="font-semibold">{model.name}</h3>
-                          <p className="text-sm text-muted-foreground font-mono">{model.endpoint}</p>
-                          <div className="flex items-center space-x-4 mt-2 text-sm text-muted-foreground">
-                            <span>{model.calls} calls today</span>
-                            <Separator orientation="vertical" className="h-4" />
-                            <span>Avg: {model.latency}</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Badge variant="default">Live</Badge>
-                          <Button size="sm" variant="outline">Configure</Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
+            <ModelManager />
           </TabsContent>
 
           <TabsContent value="billing">
@@ -240,8 +159,8 @@ const Index = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold text-primary">$12.50</div>
-                    <p className="text-sm text-muted-foreground">Available credits</p>
+                    <div className="text-3xl font-bold text-primary">$10.00</div>
+                    <p className="text-sm text-muted-foreground">Free credits remaining</p>
                   </CardContent>
                 </Card>
 
@@ -253,7 +172,7 @@ const Index = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">$8.40</div>
+                    <div className="text-2xl font-bold">$0.00</div>
                     <p className="text-sm text-muted-foreground">This month</p>
                   </CardContent>
                 </Card>
@@ -262,11 +181,11 @@ const Index = () => {
                   <CardHeader>
                     <CardTitle className="flex items-center">
                       <HardDrive className="h-5 w-5 mr-2" />
-                      API Calls
+                      Storage & API
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">$2.10</div>
+                    <div className="text-2xl font-bold">$0.00</div>
                     <p className="text-sm text-muted-foreground">This month</p>
                   </CardContent>
                 </Card>
@@ -274,27 +193,30 @@ const Index = () => {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Usage Breakdown</CardTitle>
-                  <CardDescription>Pay-as-you-go pricing details</CardDescription>
+                  <CardTitle>Free Tier Benefits</CardTitle>
+                  <CardDescription>What's included in your free MLCloud account</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span>A100 GPU ($2.50/hour)</span>
-                      <span>2.5 hours - $6.25</span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <h4 className="font-medium">Included Free:</h4>
+                      <ul className="space-y-2 text-sm text-muted-foreground">
+                        <li>• $10.00 GPU credits (NVIDIA T4)</li>
+                        <li>• 100GB storage space</li>
+                        <li>• Unlimited public notebooks</li>
+                        <li>• 10,000 API calls/month</li>
+                        <li>• Community support</li>
+                      </ul>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span>V100 GPU ($1.20/hour)</span>
-                      <span>1.8 hours - $2.15</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>API Calls ($0.002/call)</span>
-                      <span>1,240 calls - $2.48</span>
-                    </div>
-                    <Separator />
-                    <div className="flex justify-between items-center font-semibold">
-                      <span>Total Usage</span>
-                      <span>$10.88</span>
+                    <div className="space-y-4">
+                      <h4 className="font-medium">Usage-based Pricing:</h4>
+                      <ul className="space-y-2 text-sm text-muted-foreground">
+                        <li>• T4 GPU: Free (first $10)</li>
+                        <li>• V100 GPU: $0.50/hour</li>
+                        <li>• A100 GPU: $1.20/hour</li>
+                        <li>• Storage: $0.10/GB/month</li>
+                        <li>• API calls: $0.002/call (after free tier)</li>
+                      </ul>
                     </div>
                   </div>
                 </CardContent>
