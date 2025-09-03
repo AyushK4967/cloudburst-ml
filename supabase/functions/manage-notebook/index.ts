@@ -115,12 +115,62 @@ serve(async (req) => {
         }
 
         // Retrieve and decrypt token securely
+        console.log(`Attempting to get token for notebook ${notebook_id}`)
         const { data: tokenData, error: tokenError } = await supabaseClient.rpc('get_notebook_token', {
           p_notebook_id: notebook_id
         })
 
+        console.log('Token retrieval result:', { tokenData, tokenError })
+
         if (tokenError || !tokenData || tokenData.length === 0) {
-          throw new Error('Notebook token not found or expired')
+          console.log('Token not found, generating new token for existing notebook')
+          
+          // Generate new token for existing notebook
+          const rawToken = crypto.randomUUID()
+          const encoder = new TextEncoder()
+          const keyData = await crypto.subtle.importKey(
+            'raw',
+            encoder.encode(user.id.slice(0, 32).padEnd(32, '0')),
+            { name: 'AES-GCM' },
+            false,
+            ['encrypt']
+          )
+          
+          const iv = crypto.getRandomValues(new Uint8Array(12))
+          const encryptedData = await crypto.subtle.encrypt(
+            { name: 'AES-GCM', iv },
+            keyData,
+            encoder.encode(rawToken)
+          )
+          
+          const encryptedToken = btoa(String.fromCharCode(...new Uint8Array(encryptedData))) + '.' + btoa(String.fromCharCode(...iv))
+          const tokenHash = await crypto.subtle.digest('SHA-256', encoder.encode(rawToken))
+          const tokenHashHex = Array.from(new Uint8Array(tokenHash)).map(b => b.toString(16).padStart(2, '0')).join('')
+          
+          // Store the new token
+          const { error: createTokenError } = await supabaseClient.rpc('create_notebook_token', {
+            p_notebook_id: notebook_id,
+            p_encrypted_token: encryptedToken,
+            p_token_hash: tokenHashHex
+          })
+          
+          if (createTokenError) {
+            console.error('Failed to create new token:', createTokenError)
+            throw new Error('Failed to generate notebook access token')
+          }
+          
+          // Return the new token directly
+          const jupyterUrl = `${notebook.jupyter_url}?token=${rawToken}`
+          
+          return new Response(
+            JSON.stringify({ 
+              success: true, 
+              jupyter_url: jupyterUrl,
+              port: notebook.jupyter_port,
+              expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours from now
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
         }
 
         // Decrypt the token

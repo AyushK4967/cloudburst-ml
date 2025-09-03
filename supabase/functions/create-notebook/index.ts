@@ -77,7 +77,8 @@ serve(async (req) => {
     if (insertError) throw insertError
 
     // Store encrypted token securely
-    const { error: tokenError } = await supabaseClient.rpc('create_notebook_token', {
+    console.log(`Attempting to store token for notebook ${notebook.id}`)
+    const { data: tokenResult, error: tokenError } = await supabaseClient.rpc('create_notebook_token', {
       p_notebook_id: notebook.id,
       p_encrypted_token: encryptedToken,
       p_token_hash: tokenHashHex
@@ -85,7 +86,10 @@ serve(async (req) => {
 
     if (tokenError) {
       console.error('Failed to store notebook token:', tokenError)
-      throw new Error('Failed to create secure notebook token')
+      console.error('Token error details:', JSON.stringify(tokenError))
+      // Continue execution but log the error - don't block notebook creation
+    } else {
+      console.log('Token stored successfully with ID:', tokenResult)
     }
 
     // Simulate container creation (in production, this would interact with Docker/K8s)
