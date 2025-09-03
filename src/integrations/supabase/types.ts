@@ -58,9 +58,13 @@ export type Database = {
       }
       notebooks: {
         Row: {
+          container_id: string | null
           created_at: string | null
           gpu_type: string | null
           id: string
+          jupyter_port: number | null
+          jupyter_token: string | null
+          jupyter_url: string | null
           name: string
           runtime_minutes: number | null
           status: string | null
@@ -68,9 +72,13 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          container_id?: string | null
           created_at?: string | null
           gpu_type?: string | null
           id?: string
+          jupyter_port?: number | null
+          jupyter_token?: string | null
+          jupyter_url?: string | null
           name: string
           runtime_minutes?: number | null
           status?: string | null
@@ -78,9 +86,13 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          container_id?: string | null
           created_at?: string | null
           gpu_type?: string | null
           id?: string
+          jupyter_port?: number | null
+          jupyter_token?: string | null
+          jupyter_url?: string | null
           name?: string
           runtime_minutes?: number | null
           status?: string | null

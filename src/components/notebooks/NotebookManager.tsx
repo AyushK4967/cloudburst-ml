@@ -60,29 +60,23 @@ export const NotebookManager = () => {
     if (!user || !newNotebook.name.trim()) return;
 
     try {
-      const { data, error } = await supabase
-        .from('notebooks')
-        .insert({
+      const { data, error } = await supabase.functions.invoke('create-notebook', {
+        body: {
           name: newNotebook.name.trim(),
-          gpu_type: newNotebook.gpu_type,
-          user_id: user.id,
-          status: 'starting'
-        })
-        .select()
-        .single();
+          gpu_type: newNotebook.gpu_type
+        }
+      });
 
       if (error) throw error;
       
-      setNotebooks(prev => [data, ...prev]);
+      setNotebooks(prev => [data.notebook, ...prev]);
       setCreateDialogOpen(false);
       setNewNotebook({ name: '', gpu_type: 'T4' });
       toast.success('Notebook created successfully');
       
-      // Simulate starting process
+      // Refresh notebooks to get updated status
       setTimeout(() => {
-        setNotebooks(prev => 
-          prev.map(nb => nb.id === data.id ? { ...nb, status: 'running' } : nb)
-        );
+        fetchNotebooks();
       }, 3000);
     } catch (error) {
       console.error('Error creating notebook:', error);
@@ -91,26 +85,21 @@ export const NotebookManager = () => {
   };
 
   const toggleNotebook = async (notebook: Notebook) => {
-    const newStatus = notebook.status === 'running' ? 'stopping' : 'starting';
+    const action = notebook.status === 'running' ? 'stop' : 'start';
     
     try {
-      const { error } = await supabase
-        .from('notebooks')
-        .update({ status: newStatus })
-        .eq('id', notebook.id);
+      const { error } = await supabase.functions.invoke('manage-notebook', {
+        body: {
+          notebook_id: notebook.id,
+          action
+        }
+      });
 
       if (error) throw error;
       
-      setNotebooks(prev => 
-        prev.map(nb => nb.id === notebook.id ? { ...nb, status: newStatus } : nb)
-      );
-
-      // Simulate state change
+      // Refresh notebooks to get updated status
       setTimeout(() => {
-        const finalStatus = newStatus === 'starting' ? 'running' : 'stopped';
-        setNotebooks(prev => 
-          prev.map(nb => nb.id === notebook.id ? { ...nb, status: finalStatus } : nb)
-        );
+        fetchNotebooks();
       }, 2000);
     } catch (error) {
       console.error('Error updating notebook:', error);
@@ -120,10 +109,12 @@ export const NotebookManager = () => {
 
   const deleteNotebook = async (notebookId: string) => {
     try {
-      const { error } = await supabase
-        .from('notebooks')
-        .delete()
-        .eq('id', notebookId);
+      const { error } = await supabase.functions.invoke('manage-notebook', {
+        body: {
+          notebook_id: notebookId,
+          action: 'delete'
+        }
+      });
 
       if (error) throw error;
       
@@ -135,13 +126,28 @@ export const NotebookManager = () => {
     }
   };
 
-  const openNotebook = (notebook: Notebook) => {
+  const openNotebook = async (notebook: Notebook) => {
     if (notebook.status !== 'running') {
       toast.error('Notebook must be running to open');
       return;
     }
-    // In production, this would open JupyterHub
-    window.open(`/notebook/${notebook.id}`, '_blank');
+
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-notebook', {
+        body: {
+          notebook_id: notebook.id,
+          action: 'get_url'
+        }
+      });
+
+      if (error) throw error;
+      
+      // Open Jupyter notebook in new tab
+      window.open(data.jupyter_url, '_blank');
+    } catch (error) {
+      console.error('Error getting notebook URL:', error);
+      toast.error('Failed to open notebook');
+    }
   };
 
   const formatRuntime = (minutes: number) => {
