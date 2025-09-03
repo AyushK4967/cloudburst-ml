@@ -56,6 +56,44 @@ export type Database = {
         }
         Relationships: []
       }
+      notebook_tokens: {
+        Row: {
+          created_at: string | null
+          encrypted_token: string
+          expires_at: string
+          id: string
+          notebook_id: string
+          token_hash: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          encrypted_token: string
+          expires_at?: string
+          id?: string
+          notebook_id: string
+          token_hash: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          encrypted_token?: string
+          expires_at?: string
+          id?: string
+          notebook_id?: string
+          token_hash?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notebook_tokens_notebook_id_fkey"
+            columns: ["notebook_id"]
+            isOneToOne: true
+            referencedRelation: "notebooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notebooks: {
         Row: {
           container_id: string | null
@@ -63,7 +101,6 @@ export type Database = {
           gpu_type: string | null
           id: string
           jupyter_port: number | null
-          jupyter_token: string | null
           jupyter_url: string | null
           name: string
           runtime_minutes: number | null
@@ -77,7 +114,6 @@ export type Database = {
           gpu_type?: string | null
           id?: string
           jupyter_port?: number | null
-          jupyter_token?: string | null
           jupyter_url?: string | null
           name: string
           runtime_minutes?: number | null
@@ -91,7 +127,6 @@ export type Database = {
           gpu_type?: string | null
           id?: string
           jupyter_port?: number | null
-          jupyter_token?: string | null
           jupyter_url?: string | null
           name?: string
           runtime_minutes?: number | null
@@ -136,7 +171,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cleanup_expired_tokens: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      create_notebook_token: {
+        Args: {
+          p_encrypted_token: string
+          p_notebook_id: string
+          p_token_hash: string
+        }
+        Returns: string
+      }
+      get_notebook_token: {
+        Args: { p_notebook_id: string }
+        Returns: {
+          encrypted_token: string
+          expires_at: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

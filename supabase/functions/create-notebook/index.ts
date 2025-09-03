@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { crypto } from 'https://deno.land/std@0.168.0/crypto/mod.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -32,7 +33,32 @@ serve(async (req) => {
 
     // Generate unique port for Jupyter
     const port = Math.floor(Math.random() * 1000) + 8888
-    const token = crypto.randomUUID()
+    const rawToken = crypto.randomUUID()
+    
+    // Create encryption key from user ID and current time (simple encryption)
+    const encoder = new TextEncoder()
+    const keyData = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(user.id.slice(0, 32).padEnd(32, '0')),
+      { name: 'AES-GCM' },
+      false,
+      ['encrypt']
+    )
+    
+    // Encrypt the token
+    const iv = crypto.getRandomValues(new Uint8Array(12))
+    const encryptedData = await crypto.subtle.encrypt(
+      { name: 'AES-GCM', iv },
+      keyData,
+      encoder.encode(rawToken)
+    )
+    
+    // Encode encrypted token and IV for storage
+    const encryptedToken = btoa(String.fromCharCode(...new Uint8Array(encryptedData))) + '.' + btoa(String.fromCharCode(...iv))
+    
+    // Create hash of token for verification
+    const tokenHash = await crypto.subtle.digest('SHA-256', encoder.encode(rawToken))
+    const tokenHashHex = Array.from(new Uint8Array(tokenHash)).map(b => b.toString(16).padStart(2, '0')).join('')
     
     // Create notebook record first
     const { data: notebook, error: insertError } = await supabaseClient
@@ -43,13 +69,24 @@ serve(async (req) => {
         user_id: user.id,
         status: 'starting',
         jupyter_port: port,
-        jupyter_token: token,
         jupyter_url: `https://jupyter-${user.id.slice(0, 8)}.lovable.app`
       })
       .select()
       .single()
 
     if (insertError) throw insertError
+
+    // Store encrypted token securely
+    const { error: tokenError } = await supabaseClient.rpc('create_notebook_token', {
+      p_notebook_id: notebook.id,
+      p_encrypted_token: encryptedToken,
+      p_token_hash: tokenHashHex
+    })
+
+    if (tokenError) {
+      console.error('Failed to store notebook token:', tokenError)
+      throw new Error('Failed to create secure notebook token')
+    }
 
     // Simulate container creation (in production, this would interact with Docker/K8s)
     console.log(`Creating Jupyter container for notebook ${notebook.id}`)
@@ -86,7 +123,7 @@ serve(async (req) => {
         success: true, 
         notebook: {
           ...notebook,
-          jupyter_url: `${notebook.jupyter_url}?token=${token}`
+          jupyter_url: `${notebook.jupyter_url}?token=${rawToken}` // Use raw token for immediate access
         }
       }),
       { 

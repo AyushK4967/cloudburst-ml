@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { crypto } from 'https://deno.land/std@0.168.0/crypto/mod.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -113,13 +114,45 @@ serve(async (req) => {
           throw new Error('Notebook must be running to get URL')
         }
 
-        const jupyterUrl = `${notebook.jupyter_url}?token=${notebook.jupyter_token}`
+        // Retrieve and decrypt token securely
+        const { data: tokenData, error: tokenError } = await supabaseClient.rpc('get_notebook_token', {
+          p_notebook_id: notebook_id
+        })
+
+        if (tokenError || !tokenData || tokenData.length === 0) {
+          throw new Error('Notebook token not found or expired')
+        }
+
+        // Decrypt the token
+        const [encryptedB64, ivB64] = tokenData[0].encrypted_token.split('.')
+        const encrypted = Uint8Array.from(atob(encryptedB64), c => c.charCodeAt(0))
+        const iv = Uint8Array.from(atob(ivB64), c => c.charCodeAt(0))
+        
+        const encoder = new TextEncoder()
+        const decoder = new TextDecoder()
+        const keyData = await crypto.subtle.importKey(
+          'raw',
+          encoder.encode(user.id.slice(0, 32).padEnd(32, '0')),
+          { name: 'AES-GCM' },
+          false,
+          ['decrypt']
+        )
+        
+        const decryptedData = await crypto.subtle.decrypt(
+          { name: 'AES-GCM', iv },
+          keyData,
+          encrypted
+        )
+        
+        const token = decoder.decode(decryptedData)
+        const jupyterUrl = `${notebook.jupyter_url}?token=${token}`
         
         return new Response(
           JSON.stringify({ 
             success: true, 
             jupyter_url: jupyterUrl,
-            port: notebook.jupyter_port
+            port: notebook.jupyter_port,
+            expires_at: tokenData[0].expires_at
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
